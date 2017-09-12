@@ -28,6 +28,9 @@
 #define USBASP_FUNC_TPI_RAWWRITE     14
 #define USBASP_FUNC_TPI_READBLOCK    15
 #define USBASP_FUNC_TPI_WRITEBLOCK   16
+#define USBASP_FUNC_EN_DEBUG	     17
+#define USBASP_FUNC_DIS_DEBUG	     18
+#define USBASP_FUNC_RW_DEBUG	     19
 #define USBASP_FUNC_GETCAPABILITIES 127
 
 /* USBASP capabilities */
@@ -41,6 +44,7 @@
 #define PROG_STATE_WRITEEEPROM  4
 #define PROG_STATE_TPI_READ     5
 #define PROG_STATE_TPI_WRITE    6
+#define PROG_STATE_DEBUG_MODE	7
 
 /* Block mode flags */
 #define PROG_BLOCKFLAG_FIRST    1

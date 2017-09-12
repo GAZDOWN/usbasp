@@ -64,7 +64,7 @@ void enableDebug(uint8_t baud_selector){
 		uartDisable();
 	}
 
-	wasInDebugMode = baud_selector
+	wasInDebugMode = baud_selector;
 }
 
 uchar usbFunctionSetup(uchar data[8]) {
@@ -94,7 +94,7 @@ uchar usbFunctionSetup(uchar data[8]) {
 		ledRedOff();
 
 		/* Re-enable debug mode after programming is done if it was on */
-		enableDebug(wasInDebugMode)
+		enableDebug(wasInDebugMode);
 
 	} else if (data[1] == USBASP_FUNC_TRANSMIT) {
 		replyBuffer[0] = ispTransmit(data[2]);
@@ -385,8 +385,8 @@ void hardwareInit(void) {
 	usbDeviceConnect();
 
 	/* set led pins as outputs */
-	RED_PORT_DDR |= (1 << RED_NUM)
-	GREEN_PORT_DDR |= (1 << GREEN_NUM)
+	RED_PORT_DDR |= (1 << RED_NUM);
+	GREEN_PORT_DDR |= (1 << GREEN_NUM);
 
 	/* enable pull up on jumper */
 	SLOW_SCK_PORT |= (1 << SLOW_SCK_NUM);
