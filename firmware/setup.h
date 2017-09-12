@@ -1,3 +1,7 @@
+/* Author: Marcel Gazdik (GAZDOWN)
+ * E-Mail: gazdikmarcel (at) gmail (dot) com
+ */
+
 #ifndef _UART_SETUP_H_
 #define _UART_SETUP_H_
 

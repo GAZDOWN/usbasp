@@ -1,14 +1,13 @@
+/* Author: Marcel Gazdik (GAZDOWN)
+ * E-Mail: gazdikmarcel (at) gmail (dot) com
+ */
+
 #include "uart.h"
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
 #include <avr/sfr_defs.h>
 #include <avr/pgmspace.h>
-
-#ifndef F_CPU
-#define F_CPU 12000000L
-#endif
-
 
 #define WBUF_A		0
 #define WBUF_B		1
@@ -47,8 +46,6 @@ void uartInit(uint8_t baudSelector){
         UARTSpdT spd = uartCalculateSpd(baudrate); 
 
 	//set baudrate
-	//UBRRH = ((F_CPU / baudrate / 16) - 1) >> 8;
-	//UBRRL = (F_CPU / baudrate / 16) - 1;
 	UBRRH = spd.ubrr >> 8;
 	UBRRL = spd.ubrr;
 	

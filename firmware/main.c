@@ -25,6 +25,7 @@
 #include "clock.h"
 #include "tpi.h"
 #include "tpi_defs.h"
+#include "uart.h"
 
 static uchar replyBuffer[8];
 
@@ -38,11 +39,42 @@ static unsigned int prog_pagesize;
 static uchar prog_blockflags;
 static uchar prog_pagecounter;
 
+/* wasInDebugMode holds the baud rate selector value. This allows us to
+ * easily switch from programming mode back to debug mode.
+ *
+ * If wasInDebugMode is set to value lower than zero, the routines will not
+ * switch back to debug mode.
+ */
+static int8_t wasInDebugMode = -1;
+
+void enableDebug(uint8_t baud_selector){
+	if (baud_selector >= 0){
+ 		/* Reset UART */
+		uartDisable();
+
+		/* Enable uart console */
+		ledRedOn();
+		prog_state = PROG_STATE_DEBUG_MODE;
+		uartInit(baud_selector);
+	}
+	else {
+		/* Disable uart console */
+		ledRedOff();
+		prog_state = PROG_STATE_IDLE;
+		uartDisable();
+	}
+
+	wasInDebugMode = baud_selector
+}
+
 uchar usbFunctionSetup(uchar data[8]) {
 
 	uchar len = 0;
 
 	if (data[1] == USBASP_FUNC_CONNECT) {
+		/* Disable debug mode */
+		uartDisable();
+		ledGreenOff();
 
 		/* set SCK speed */
 		if ((SLOW_SCK_PIN & (1 << SLOW_SCK_NUM)) == 0) {
@@ -60,6 +92,9 @@ uchar usbFunctionSetup(uchar data[8]) {
 	} else if (data[1] == USBASP_FUNC_DISCONNECT) {
 		ispDisconnect();
 		ledRedOff();
+
+		/* Re-enable debug mode after programming is done if it was on */
+		enableDebug(wasInDebugMode)
 
 	} else if (data[1] == USBASP_FUNC_TRANSMIT) {
 		replyBuffer[0] = ispTransmit(data[2]);
@@ -193,6 +228,39 @@ uchar usbFunctionSetup(uchar data[8]) {
 		len = 4;
 	}
 
+	else if(data[1] == USBASP_FUNC_EN_DEBUG){
+		enableDebug(data[2]);
+	}
+
+	else if(data[1] == USBASP_FUNC_DIS_DEBUG){
+		enableDebug(-1);
+	}
+
+	else if(data[1] == USBASP_FUNC_RW_DEBUG){
+		if(prog_state == PROG_STATE_DEBUG_MODE){
+			usbRequest_t *rq = (void *)data;
+
+			len = (rq->wLength.word > OUT_BUFFER_LEN) ? OUT_BUFFER_LEN : rq->wLength.word;
+
+			const OutBuffer *b = getRXData();
+
+			/* [length, str[0], str[1], ...] */
+			usbMsgPtr = (void *)b;
+
+			//wIndex and wValue are 4 bytes long, if
+			//first byte contains length of incoming data,
+			//then 3 remaining bytes contains user characters.
+			//This is very limited, but it is enough for
+			//keyboard input
+
+			setTXData((data + 3), (data[2] < 3) ? data[2] : 3);
+
+			return len;
+		}
+		else
+			return 0;
+	}
+
 	usbMsgPtr = replyBuffer;
 
 	return len;
@@ -305,7 +373,8 @@ void hardwareInit(void) {
 
 	uchar i;
 
-	PORTC |= (1 << PC0) | (1 << PC1); /* LEDs off */
+	ledRedOff();
+	ledGreenOff();
 
 	usbDeviceDisconnect();  /* enforce re-enumeration, do this while interrupts are disabled! */
 	i = 0;
@@ -315,8 +384,9 @@ void hardwareInit(void) {
 	}
 	usbDeviceConnect();
 
-	/* all inputs except PC0, PC1 */
-	DDRC = 0x03;
+	/* set led pins as outputs */
+	RED_PORT_DDR |= (1 << RED_NUM)
+	GREEN_PORT_DDR |= (1 << GREEN_NUM)
 
 	/* enable pull up on jumper */
 	SLOW_SCK_PORT |= (1 << SLOW_SCK_NUM);
@@ -345,6 +415,8 @@ int main(void) {
 	/* main loop */
 	for (;;) {
 		usbPoll();
+		uartTXPoll();
+		uartRXPoll();
 	}
 
 	return 0;

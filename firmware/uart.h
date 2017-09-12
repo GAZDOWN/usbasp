@@ -1,5 +1,5 @@
-/* Author: Bc. Marcel Gazdik
- * E-Mail: gazdikmarcel (at) atlas (dot) cz
+/* Author: Marcel Gazdik (GAZDOWN)
+ * E-Mail: gazdikmarcel (at) gmail (dot) com
  */
 
 #ifndef UART_H

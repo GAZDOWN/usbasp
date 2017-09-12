@@ -1,3 +1,7 @@
+/* Author: Marcel Gazdik (GAZDOWN)
+ * E-Mail: gazdikmarcel (at) gmail (dot) com
+ */
+
 #include "setup.h"
 
 /**
