@@ -10,19 +10,19 @@ license=('GPL')
 
 source=(
 	"GUSBaspDebugConsole.desktop"
-	'git+http://github.com/GAZDOWN/usbasp.git#branch=console'
+	"$_pkgname::git+https://github.com/GAZDOWN/usbasp.git#branch=console"
 )
 
 md5sums=('b05bed1759bdb9397c2d4167c02f2c60' 'SKIP')
 
 pkgver() {
-	cd $pkgname
+	cd $_pkgname
 	printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
 }
 
 
 package() {
-	cd ${srcdir}/${_pkgname}_${pkgver}
+	cd ${srcdir}/${_pkgname}/console/DebugConsole
 
 	mkdir -p ${pkgdir}/opt/GUSBaspDebugConsole/bin
 	mkdir -p ${pkgdir}/usr/share/applications
@@ -34,6 +34,6 @@ package() {
 	
 	install -Dm755 DebugConsole ${pkgdir}/opt/GUSBaspDebugConsole/bin
 
-	cd ..
+	cd ${srcdir}
 	install -Dm755 GUSBaspDebugConsole.desktop ${pkgdir}/usr/share/applications/
 }
