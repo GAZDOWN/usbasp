@@ -1,0 +1,39 @@
+pkgname=GUSBasp-console-git
+_pkgname=GUSBaspDebugConsole
+pkgver=git
+pkgrel=1
+pkgdesc="Debug console compatible with GAZDOWN's modified USBasp AVR programmer"
+arch=('x86_64' 'i686')
+makedepends=('git')
+depends=('libusb' 'qt5-base')
+license=('GPL')
+
+source=(
+	"GUSBaspDebugConsole.desktop"
+	'git+http://github.com/GAZDOWN/usbasp.git#branch=console'
+)
+
+md5sums=('b05bed1759bdb9397c2d4167c02f2c60' 'SKIP')
+
+pkgver() {
+	cd $pkgname
+	printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+
+package() {
+	cd ${srcdir}/${_pkgname}_${pkgver}
+
+	mkdir -p ${pkgdir}/opt/GUSBaspDebugConsole/bin
+	mkdir -p ${pkgdir}/usr/share/applications
+
+
+	qmake
+	make	
+	
+	
+	install -Dm755 DebugConsole ${pkgdir}/opt/GUSBaspDebugConsole/bin
+
+	cd ..
+	install -Dm755 GUSBaspDebugConsole.desktop ${pkgdir}/usr/share/applications/
+}

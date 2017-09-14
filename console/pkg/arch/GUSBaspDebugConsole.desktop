@@ -1,0 +1,17 @@
+[Desktop Entry]
+Categories=Development
+Comment=
+Exec=/opt/GUSBaspDebugConsole/bin/DebugConsole
+GenericName=
+Icon=utilities-terminal
+MimeType=
+Name=GUSBaspDebugConsole
+Path=
+StartupNotify=true
+Terminal=false
+TerminalOptions=
+Type=Application
+X-DBUS-ServiceName=
+X-DBUS-StartupType=
+X-KDE-SubstituteUID=false
+X-KDE-Username=
