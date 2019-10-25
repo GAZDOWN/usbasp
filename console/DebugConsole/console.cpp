@@ -86,6 +86,7 @@ int Console::_putChar(char c){
                     break;
 
         case '\n':  this->newLineBuffer.append(c);
+                    break;
 
         case '\r':  this->newLineCursorPosition = 0;
                     break;
@@ -183,7 +184,7 @@ int Console::putString(QString str){
     }
 
     if(refresh){
-        this->setPlainText(this->toPlainText().replace(this->rowCursorPosition, this->newLineBuffer.length(), this->newLineBuffer));
+        this->setPlainText(this->toPlainText().replace(this->rowCursorPosition, this->toPlainText().length() - this->rowCursorPosition, this->newLineBuffer));
         this->moveCursor(QTextCursor::End);
     }
 
@@ -193,8 +194,6 @@ int Console::putString(QString str){
 void Console::clear(){
     QPlainTextEdit::clear();
 
-    //this->buf.clear();
-
     this->newLineBuffer.clear();
     this->newLineCursorPosition = 0;
     this->rowCursorPosition = 0;
@@ -202,42 +201,16 @@ void Console::clear(){
 
 void Console::mousePressEvent(QMouseEvent *ev){
     Q_UNUSED(ev);
-    //this->putString("\r");
     this->setFocus();
 }
 
 void Console::paintEvent(QPaintEvent *e){
-    /*qDebug() << "pe";
-
-    QStyleOption opt;
-    opt.init(this);
-    QPainter p(this);
-    this->style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);*/
-
     QPlainTextEdit::paintEvent(e);
 }
 
 
 
 void Console::keyPressEvent(QKeyEvent *ev){
-    //QPlainTextEdit::keyPressEvent(ev);
-
-    //this->putString("test\rab\n");
-    //this->putString("abc\rdek\b\rh\r\n");
-    //this->putString("000\r");
-    //this->putString("\nab\rcde\rh");
-    //this->putString("h\r\nab\rd");
-    //this->putString("01234567890123456789");
-    //this->putString("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b2");
-
-    /*for(int j = 0; j < 3; j++){
-        for(int i = 0; i < 20; i++){
-            this->putString("abc\n\r\a");
-        }
-        this->putChar(27);
-        this->putString("[2J");
-    }*/
-
     if(ev->key() == Qt::Key_Backspace){
         QPlainTextEdit::keyPressEvent(ev);
         emit keyPressed(8);
