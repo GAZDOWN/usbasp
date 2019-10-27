@@ -49,8 +49,9 @@ class USBasp : public QObject {
         typedef struct _data_buffer_ {
             unsigned char   len;
             char            data[DATA_LEN];
+            unsigned char   size;
 
-            _data_buffer_() : len(0) {}
+            _data_buffer_() : len(0), data{0}, size(DATA_LEN) {}
         } TBuffer;
 
         typedef struct _usbasp_prog_data_ {
@@ -62,6 +63,11 @@ class USBasp : public QObject {
         } TUSBaspProg;
 
     private:
+        enum receive {
+            RECEIVE_DISABLE = 0,
+            RECEIVE_ENABLE
+        };
+
         libusb_context          *usbContext;
         libusb_device_handle    *openedDevice;
         libusb_device           **devList;
@@ -173,14 +179,26 @@ private:
          * (low level function)
          * @param unsigned char     receive     - enable receive (true / false)
          * @param unsigned char     functionid  - operation
-         * @param char *            send        - tx buffer
-         * @param char *            buffer      - rx buffer
-         * @param int               buffersize  - size of buffer
+         * @param char *            txBuffer    - tx buffer
+         * @param char *            rxBuffer    - rx buffer
          *
          * @return int (look into libusb usb_control_msg documentation)
          * @throw USBException if any runtime error ocurs
          */
-        int USBTransmit(unsigned char receive, unsigned char functionid, char *send, char * buffer, int buffersize) throw (USBException);
+        int USBTransmitData(enum receive receive, unsigned char functionid, TBuffer *txBuffer, TBuffer *rxBuffer) throw (USBException);
+
+        /**
+         * send CONTROL data to target device (max 4 bytes)
+         * (low level function)
+         * @param unsigned char     receive     - enable receive (true / false)
+         * @param unsigned char     functionid  - operation
+         * @param char *            txBuffer    - tx buffer
+         * @param char *            rxBuffer    - rx buffer
+         *
+         * @return int (look into libusb usb_control_msg documentation)
+         * @throw USBException if any runtime error ocurs
+         */
+        int USBTransmitControl(enum receive receive, unsigned char functionid, TBuffer *txBuffer, TBuffer *rxBuffer) throw (USBException);
 
     public slots:
         /**

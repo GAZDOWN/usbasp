@@ -24,7 +24,6 @@ USBasp::USBasp(){
 
     if(libusb_init(&this->usbContext)){
         throw USBException("USB subsystem cannot be initialized");
-        //return USB_E_NO_DEV;
     }
 }
 
@@ -41,8 +40,9 @@ void USBasp::connectDevice(const int device, const enum baudrates baudRate) thro
 }
 
 void USBasp::_connectDevice(const int device, const enum baudrates baudRate) throw (USBException) {
-    char temp[4] = {0};
-    temp[0] = baudRate;
+    USBasp::TBuffer temp;
+    //first byte of the message sets the baudrate
+    temp.len = baudRate;
 
     //make sure there is at least one device
     if(this->getDeviceCount() == 0)
@@ -51,9 +51,8 @@ void USBasp::_connectDevice(const int device, const enum baudrates baudRate) thr
 
     //test if something went wrong (first: try to open device, next switch device into debug mode)
     int err;
-    if(USB_E_OK != (err = this->openDevice(device)) || 0 > USBTransmit(1, USB_EN_DEBUG_MODE, temp, temp, sizeof(temp))){
+    if(USB_E_OK != (err = this->openDevice(device)) || 0 > USBTransmitControl(RECEIVE_ENABLE, USB_EN_DEBUG_MODE, &temp, &temp)){
         throw USBException("Device cannot be connected");
-        //throw USBException(QString("Device can not be connected"));
     }
 
 
@@ -66,9 +65,7 @@ void USBasp::_connectDevice(const int device, const enum baudrates baudRate) thr
 
 
 void USBasp::disconnetctDevice() throw (USBException) {
-    char temp[4];
-    memset(temp, 0, sizeof(temp));
-
+    USBasp::TBuffer temp;
 
     if(!this->isConnected()){
             throw USBException("Device not connected");
@@ -78,7 +75,7 @@ void USBasp::disconnetctDevice() throw (USBException) {
         timer.stop();
 
     //set programmer to idle state
-    if(0 > USBTransmit(1, USB_DIS_DEBUG_MODE, temp, temp, sizeof(temp))){
+    if(0 > USBTransmitControl(RECEIVE_ENABLE, USB_DIS_DEBUG_MODE, &temp, &temp)){
             this->closeDevice();
             throw USBException("Device can not be set into idle mode, is USBAsp programmer still conected?");
     }
@@ -110,13 +107,6 @@ int USBasp::findDevices(){
 
             libusb_get_string_descriptor_ascii(tmpHandle, desc.iManufacturer, manString, 128);
             libusb_get_string_descriptor_ascii(tmpHandle, desc.iProduct, prodSting, 128);
-
-            /*qDebug()
-                    << "device:" << libusb_get_device_address(devList[i])
-                    << "bus:" << libusb_get_bus_number(devList[i])
-                    << "man:" << QString((char *)manString)
-                    << "prod:" << QString((char *)prodSting)
-                    ;*/
 
             this->progList.push_back(new TUSBaspProg(libusb_get_bus_number(devList[i]), libusb_get_device_address(devList[i]), i));
 
@@ -205,10 +195,37 @@ void USBasp::canclePing(){
     this->pState = 0;
 }
 
-int USBasp::USBTransmit(unsigned char receive, unsigned char functionid, char *send, char * buffer, int buffersize) throw (USBException) {
-    //make sure receive is either 0 or 1
-    receive &= 0x1;
 
+int USBasp::USBTransmitData(enum receive receive, unsigned char functionid, USBasp::TBuffer *txBuffer, USBasp::TBuffer *rxBuffer) throw (USBException){
+    int nbytes = 0, cycle = 0;
+    USBasp::TBuffer tmpRxBuffer, tmpTxBuffer;
+
+    // tmpfix
+    rxBuffer->len = 0;
+
+    do {
+        //Copy data to tmp tx buffer
+        for(int i = 0; i < 3; i++){
+            if(i + 3 * cycle + 1 > txBuffer->len)
+                break;
+
+            tmpTxBuffer.data[tmpTxBuffer.len++] = txBuffer->data[i + 3 * cycle];
+        }
+
+        nbytes += USBTransmitControl(receive, functionid, &tmpTxBuffer, &tmpRxBuffer);
+        tmpTxBuffer.len = 0;
+
+        for(int c = 0; c < tmpRxBuffer.len; c++){
+            rxBuffer->data[rxBuffer->len++] = tmpRxBuffer.data[c];
+        }
+
+        cycle++;
+    } while(cycle * 3 < txBuffer->len);
+
+    return nbytes;
+}
+
+int USBasp::USBTransmitControl(enum receive receive, unsigned char functionid, USBasp::TBuffer *txBuffer, USBasp::TBuffer *rxBuffer) throw (USBException){
     if(NULL == this->openedDevice)
         throw USBException("There is no USBasp device connected");
 
@@ -216,16 +233,12 @@ int USBasp::USBTransmit(unsigned char receive, unsigned char functionid, char *s
                 this->openedDevice,
                 LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_RECIPIENT_DEVICE | (receive << 7),
                 functionid,
-                (send[1] << 8) | send[0],
-                (send[3] << 8) | send[2],
-                (unsigned char *)buffer,
-                buffersize,
+                (txBuffer->data[0] << 8) | txBuffer->len,
+                (txBuffer->data[2] << 8) | txBuffer->data[1],
+                (unsigned char *)rxBuffer,
+                rxBuffer->size,
                 5000
     );
-
-    /*if(nbytes < 0){
-        throw USBException(QString("Error durring the transmission:  %1").arg(nbytes).arg(trUtf8(strerror(nbytes))));
-    }*/
 
     return nbytes;
 }
@@ -243,7 +256,7 @@ char USBasp::USBSendChar(char c){
 
 void USBasp::timeout(){
     try {
-        USBTransmit(1, USB_RW_DEBUG, (char *)&(txBuffer), (char *)&rxBuffer, DATA_LEN);
+        USBTransmitData(RECEIVE_ENABLE, USB_RW_DEBUG, &txBuffer, &rxBuffer);
 
         //reset buffer
         txBuffer.len = 0;

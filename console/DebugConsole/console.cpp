@@ -9,8 +9,8 @@ const QColor Console::DEF_FONT_COLOR = QColor("#000000");
 const QColor Console::DEF_BCKG_COLOR = QColor("#FFFFFF");
 
 Console::Console(QWidget *parent) : QPlainTextEdit(parent){
-    //this->setFontPointSize(14);
-    //this->setFontFamily(QString("DejaVu Sans Mono"));
+    this->newLineCursorPosition = 0;
+    this->rowCursorPosition = 0;
 
     this->setCursorWidth(5);
     this->setWordWrapMode(QTextOption::WrapAnywhere);
@@ -20,14 +20,6 @@ Console::Console(QWidget *parent) : QPlainTextEdit(parent){
     //this->setTextInteractionFlags(this->textInteractionFlags() | Qt::TextSelectableByKeyboard);
 
     this->setTextInteractionFlags(Qt::TextSelectableByKeyboard);
-
-    /*this->replace = 0;
-    this->replaced = 0;
-
-    this->lastLinePosition = 0;*/
-
-    this->newLineCursorPosition = 0;
-    this->rowCursorPosition = 0;
 }
 
 void Console::setBackgroundColor(const QColor color){
@@ -45,31 +37,6 @@ void Console::setFontColor(const QColor color){
 
     this->repaint();
 }
-
-
-
-/*void Console::handleBackspace(QString &str){
-    for(int i = str.indexOf(0x08); i > 0; i = str.indexOf(0x08, i)){
-        if(i > 0) {
-            str.remove(i - 1, 2);
-            i--;
-        }
-        else {
-            str.remove(i, 1);
-        }
-    }
-
-    if(str.length() == 1 && str.at(0) == 0x08)
-        str.remove(0, 1);
-}
-
-void Console::handleCarrigeReturn(QString &str){
-    int i = 0;
-
-    while((i = str.indexOf('\r')) > 0){
-        str.remove(i, 1);
-    }
-}*/
 
 int Console::_putChar(char c){
     switch (c) {
@@ -215,11 +182,33 @@ void Console::keyPressEvent(QKeyEvent *ev){
         QPlainTextEdit::keyPressEvent(ev);
         emit keyPressed(8);
     }
-    else if(ev->key() == Qt::Key_Return && ev->modifiers() == Qt::NoModifier)
+    else if(ev->key() == Qt::Key_Return && ev->modifiers() == Qt::NoModifier || ev->key() == Qt::Key_Enter)
         emit keyPressed('\n');
+    else if(ev->key() == Qt::Key_Left){
+        emit keyPressed(27);
+        emit keyPressed('D');
+    }
+    else if(ev->key() == Qt::Key_Up){
+        emit keyPressed(27);
+        emit keyPressed('A');
+    }
+    else if(ev->key() == Qt::Key_Down){
+        emit keyPressed(27);
+        emit keyPressed('B');
+    }
+    else if(ev->key() == Qt::Key_Right){
+        emit keyPressed(27);
+        emit keyPressed('C');
+    }
+    else if(ev->key() == Qt::Key_U && ev->modifiers() == Qt::ControlModifier){
+        //CTRL + U
+        emit keyPressed(27);
+        emit keyPressed('[');
+        emit keyPressed('2');
+        emit keyPressed('K');
+    }
     else {
         if(ev->text().length() > 0 && 0 != ev->text().at(0).unicode())
             emit keyPressed(ev->text().at(0).unicode());
-            //emit keyPressed(ev->text().at(0).toLatin1());
     }
 }
