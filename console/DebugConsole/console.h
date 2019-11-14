@@ -44,36 +44,43 @@ public:
 
 
 protected:
-    /*int replace;
-    int replaced;
-    int lastLinePosition;
-    QString buf;*/
-    //testing
-    static const unsigned int   ESC_2_BYTE = '0';
-    static const unsigned int   ESC_CSI = '1';
+    typedef enum __insert_mode__ {
+        APPEND = 0,
+        INSERT,
+        REPLACE
+    } TInsertMode;
 
+    typedef enum __esc_mode__ {
+        VT52 = '0',
+        VT100
+    } TESCMode;
+
+
+    //static const unsigned int   ESC_2_BYTE = '0';
+    //static const unsigned int   ESC_CSI = '1';
+
+    /** @var mode holds current mode of inserting a character into the console */
+    TInsertMode mode = Console::APPEND;
+
+    /** @var escBuffer holds escape sequence */
     QString escBuffer;
-    QString newLineBuffer;
-    int newLineCursorPosition;
+
+    /** @var rowCursorPosition holds position of statr of current line */
     int rowCursorPosition;
+
+    /** @var newLineBuffer holds current line bufferred */
+    QString newLineBuffer;
+
+    /** @var newLineCursorPosition holds position of cursor in current line */
+    int newLineCursorPosition;
 
 
     void keyPressEvent(QKeyEvent *ev);
     void mousePressEvent(QMouseEvent *ev);
     void paintEvent(QPaintEvent *e);
 
-    /**
-     * @brief handleBackspace   remove backspace from incomming buffer and a character from
-     *                          the console before the backspace character
-     * @param str
-     */
-    //void handleBackspace(QString &str);
 
-    //void handleCarrigeReturn(QString &str);
-
-    void handleEscapeCharacter();
-
-    int _putChar(char c);
+    bool _putChar(char c);
 
 public slots:
     /**

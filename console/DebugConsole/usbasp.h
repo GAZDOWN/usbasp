@@ -14,7 +14,6 @@
 class USBException : public std::runtime_error {
     public:
         explicit USBException(std::string const & msg) : std::runtime_error(msg) {}
-        //explicit USBException(QString const & msg) : std::runtime_error(msg.toStdString()) {}
 };
 
 class USBasp : public QObject {
@@ -95,13 +94,13 @@ class USBasp : public QObject {
          * @param baudRate - enumeration, select supported bandwidth
          * @throw USBException if any error ocurs
          */
-        void connectDevice(const int device, const enum baudrates baudRate) throw (USBException);
+        void connectDevice(const int device, const enum baudrates baudRate);
 
         /**
          * Disconnect USBasp device
          * @throw USBException if any error ocurs
          */
-        void disconnetctDevice() throw (USBException);
+        void disconnetctDevice();
 
         /**
          * Get recived data
@@ -152,7 +151,7 @@ private:
          * @param baudRate - enumeration, select supported bandwidth
          * @throw USBException if any error ocurs
          */
-        void _connectDevice(const int device, const enum baudrates baudRate) throw (USBException);
+        void _connectDevice(const int device, const enum baudrates baudRate);
 
         /**
          * @brief USBOpenDevice
@@ -185,7 +184,7 @@ private:
          * @return int (look into libusb usb_control_msg documentation)
          * @throw USBException if any runtime error ocurs
          */
-        int USBTransmitData(enum receive receive, unsigned char functionid, TBuffer *txBuffer, TBuffer *rxBuffer) throw (USBException);
+        int USBTransmitData(enum receive receive, unsigned char functionid, TBuffer *txBuffer, TBuffer *rxBuffer);
 
         /**
          * send CONTROL data to target device (max 4 bytes)
@@ -198,7 +197,7 @@ private:
          * @return int (look into libusb usb_control_msg documentation)
          * @throw USBException if any runtime error ocurs
          */
-        int USBTransmitControl(enum receive receive, unsigned char functionid, TBuffer *txBuffer, TBuffer *rxBuffer) throw (USBException);
+        int USBTransmitControl(enum receive receive, unsigned char functionid, TBuffer *txBuffer, TBuffer *rxBuffer);
 
     public slots:
         /**

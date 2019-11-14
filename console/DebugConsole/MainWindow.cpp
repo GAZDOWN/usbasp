@@ -143,14 +143,29 @@ int MainWindow::selectProgrammer(){
 
     if(this->programmer.isConnected())
         this->disconnectProgrammer();
+    try {
+        this->programmer.findDevices();
 
-    DeviceSelect devsel(&(this->programmer), this);
-    devsel.exec();
+        if(this->programmer.getDeviceCount() == 1){
+            // One device only, there is no need for additional user action
+            this->selectedProgrammer = 0;
 
-    if(devsel.result() == QDialog::Accepted){
-        this->selectedProgrammer = devsel.getSelectedDevice();
-        return 1;
+            return 1;
+        }
+        else {
+            // Multiple devices, let the user choose
+            DeviceSelect devsel(&(this->programmer), this);
+            devsel.exec();
+
+            if(devsel.result() == QDialog::Accepted){
+                this->selectedProgrammer = devsel.getSelectedDevice();
+                return 1;
+            }
+        }
+    } catch (USBException &e){
+        //TODO: Add some meaningfull message for user
     }
+
 
     return 0;
 }

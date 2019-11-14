@@ -21,7 +21,7 @@ class DeviceSelect : public QDialog {
          * @param USBasp * programmer   a USBasp device manager
          * @param QWidget * parent      an optional pointer to the parent
          */
-        explicit DeviceSelect(USBasp *programmer, QWidget *parent = 0);
+        explicit DeviceSelect(USBasp *programmer, QWidget *parent = nullptr);
         ~DeviceSelect();
 
         int getSelectedDevice();

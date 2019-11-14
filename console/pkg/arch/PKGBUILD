@@ -1,6 +1,6 @@
 pkgname=GUSBasp-console-git
 _pkgname=GUSBaspDebugConsole
-pkgver=git
+pkgver=r21.def217d
 pkgrel=1
 pkgdesc="Debug console compatible with GAZDOWN's modified USBasp AVR programmer"
 arch=('x86_64' 'i686')

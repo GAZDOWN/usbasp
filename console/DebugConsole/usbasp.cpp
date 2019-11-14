@@ -14,9 +14,9 @@ const unsigned int USBasp::baudrate[] = {2400, 4800, 9600, 19200, 28800, 38400, 
 //---------------------------------------------------------------------------------//
 
 USBasp::USBasp(){
-    this->usbContext = NULL;
-    this->openedDevice = NULL;
-    this->devList = NULL;
+    this->usbContext = nullptr;
+    this->openedDevice = nullptr;
+    this->devList = nullptr;
     this->progListSize = 0;
 
     connect(&timer, SIGNAL(timeout()), this, SLOT(timeout()));
@@ -30,16 +30,16 @@ USBasp::USBasp(){
 USBasp::~USBasp(){
     this->clearDeviceList();
 
-    if(this->usbContext != NULL)
+    if(this->usbContext != nullptr)
         libusb_exit(this->usbContext);
 }
 
-void USBasp::connectDevice(const int device, const enum baudrates baudRate) throw (USBException) {
+void USBasp::connectDevice(const int device, const enum baudrates baudRate){
     this->canclePing();
     this->_connectDevice(device, baudRate);
 }
 
-void USBasp::_connectDevice(const int device, const enum baudrates baudRate) throw (USBException) {
+void USBasp::_connectDevice(const int device, const enum baudrates baudRate){
     USBasp::TBuffer temp;
     //first byte of the message sets the baudrate
     temp.len = baudRate;
@@ -64,7 +64,7 @@ void USBasp::_connectDevice(const int device, const enum baudrates baudRate) thr
 }
 
 
-void USBasp::disconnetctDevice() throw (USBException) {
+void USBasp::disconnetctDevice(){
     USBasp::TBuffer temp;
 
     if(!this->isConnected()){
@@ -127,14 +127,14 @@ void USBasp::pingDevice(const int device) {
 }
 
 int USBasp::openDevice(const int device){
-    if(NULL != this->openedDevice){
+    if(nullptr != this->openedDevice){
         this->closeDevice();
 
     }
 
     libusb_open(this->devList[this->progList.at(device)->busindex] , &(this->openedDevice));
 
-    if(this->openedDevice != NULL){
+    if(this->openedDevice != nullptr){
         /*if(NULL == (handler = usb_open(device))){
             return USB_E_NO_HANDLER;
         }*/
@@ -161,18 +161,18 @@ int USBasp::getDeviceCount(){
 }
 
 int USBasp::isConnected(){
-    return this->openedDevice != NULL;
+    return this->openedDevice != nullptr;
 }
 
 void USBasp::closeDevice(){
-    if(NULL != this->openedDevice){
+    if(nullptr != this->openedDevice){
         libusb_close(this->openedDevice);
-        this->openedDevice = NULL;
+        this->openedDevice = nullptr;
     }
 }
 
 void USBasp::clearDeviceList(){
-    if(NULL != this->devList){
+    if(nullptr != this->devList){
         this->closeDevice();
         libusb_free_device_list(this->devList, 1);
         this->progListSize = 0;
@@ -196,7 +196,7 @@ void USBasp::canclePing(){
 }
 
 
-int USBasp::USBTransmitData(enum receive receive, unsigned char functionid, USBasp::TBuffer *txBuffer, USBasp::TBuffer *rxBuffer) throw (USBException){
+int USBasp::USBTransmitData(enum receive receive, unsigned char functionid, USBasp::TBuffer *txBuffer, USBasp::TBuffer *rxBuffer){
     int nbytes = 0, cycle = 0;
     USBasp::TBuffer tmpRxBuffer, tmpTxBuffer;
 
@@ -215,8 +215,8 @@ int USBasp::USBTransmitData(enum receive receive, unsigned char functionid, USBa
         nbytes += USBTransmitControl(receive, functionid, &tmpTxBuffer, &tmpRxBuffer);
         tmpTxBuffer.len = 0;
 
-        for(int c = 0; c < tmpRxBuffer.len; c++){
-            rxBuffer->data[rxBuffer->len++] = tmpRxBuffer.data[c];
+        for(int i = 0; i < tmpRxBuffer.len; i++){
+            rxBuffer->data[rxBuffer->len++] = tmpRxBuffer.data[i];
         }
 
         cycle++;
@@ -225,8 +225,8 @@ int USBasp::USBTransmitData(enum receive receive, unsigned char functionid, USBa
     return nbytes;
 }
 
-int USBasp::USBTransmitControl(enum receive receive, unsigned char functionid, USBasp::TBuffer *txBuffer, USBasp::TBuffer *rxBuffer) throw (USBException){
-    if(NULL == this->openedDevice)
+int USBasp::USBTransmitControl(enum receive receive, unsigned char functionid, USBasp::TBuffer *txBuffer, USBasp::TBuffer *rxBuffer){
+    if(nullptr == this->openedDevice)
         throw USBException("There is no USBasp device connected");
 
     int nbytes = libusb_control_transfer(
@@ -265,7 +265,9 @@ void USBasp::timeout(){
         if(rxBuffer.len > 0)
             emit rxDataReady();
     }
-    catch (USBException &e){}
+    catch (USBException &e){
+        Q_UNUSED(e)
+    }
 }
 
 void USBasp::pingTick(){
@@ -279,6 +281,7 @@ void USBasp::pingTick(){
             this->disconnetctDevice();
         }
     } catch (USBException &e){
+        Q_UNUSED(e)
         //qDebug() << e.what();
     }
 

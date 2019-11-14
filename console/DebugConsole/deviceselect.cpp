@@ -33,10 +33,12 @@ void DeviceSelect::generateProgrammerList(){
     try {
         this->programmer->findDevices();
     } catch (USBException &e){
-        //qDebug() << e.what();
+        //TODO: Add some meaningfull message for user
+        return;
     }
 
     if(!this->programmer->getDeviceCount()){
+        // No device
         QLabel *label = new QLabel("No device found");
 
         QHBoxLayout * hlayout = new QHBoxLayout();
@@ -44,29 +46,26 @@ void DeviceSelect::generateProgrammerList(){
 
         this->ui->progListArea->addLayout(hlayout);
     }
+    else {
+        // TODO: Make a widget out of this select processing only known data
+        for(int i = 0; i < this->programmer->getDeviceCount(); i++){
+            QRadioButton * radio = new QRadioButton(QString("Device %1 on bus %2").arg(this->programmer->getDevice(i)->device).arg(this->programmer->getDevice(i)->bus), this);
+            if(i == 0){
+                radio->setChecked(true);
+                this->selectedDevice = 0;
+            }
+            connect(radio, SIGNAL(toggled(bool)), this, SLOT(deviceSelected()));
 
-    for(int i = 0; i < this->programmer->getDeviceCount(); i++){
-        QRadioButton * radio = new QRadioButton(QString("Device %1 on bus %2").arg(this->programmer->getDevice(i)->device).arg(this->programmer->getDevice(i)->bus), this);
-        if(i == 0){
-            radio->setChecked(true);
-            this->selectedDevice = 0;
+            QPushButton * button = new QPushButton(QString("ping"), this);
+            button->setProperty("progid", QVariant(i));
+            connect(button, SIGNAL(clicked(bool)), this, SLOT(startPinging()));
+
+            QHBoxLayout * hlayout = new QHBoxLayout();
+            hlayout->addWidget(radio);
+            hlayout->addWidget(button);
+
+            this->ui->progListArea->addLayout(hlayout);
         }
-        connect(radio, SIGNAL(toggled(bool)), this, SLOT(deviceSelected()));
-
-        QPushButton * button = new QPushButton(QString("ping"), this);
-        button->setProperty("progid", QVariant(i));
-        connect(button, SIGNAL(clicked(bool)), this, SLOT(startPinging()));
-
-        QHBoxLayout * hlayout = new QHBoxLayout();
-        hlayout->addWidget(radio);
-        hlayout->addWidget(button);
-
-        this->ui->progListArea->addLayout(hlayout);
-
-
-        //DeviceItem *item = new DeviceItem(i, QString("Device %1 on bus %2").arg(this->programmer->getDevice(i)->device).arg(this->programmer->getDevice(i)->bus), this);
-        //this->ui->progListArea->addLayout(item->getItem());
-        //this->ui->progListArea->addWidget(item);
     }
 }
 
