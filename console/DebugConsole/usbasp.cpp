@@ -96,9 +96,19 @@ int USBasp::findDevices(){
         libusb_get_device_descriptor(devList[i], &desc);
 
         if(desc.idVendor == VENDOR_ID && desc.idProduct == PRODUCT_ID){
-            if(libusb_open(devList[i], &tmpHandle)){
-                //return USB_E_NO_HANDLER;
-                continue;
+            int err = 0;
+            if((err = libusb_open(devList[i], &tmpHandle)) != 0){
+                qDebug() << err;
+                switch (err){
+                    case LIBUSB_ERROR_NO_MEM:
+                        throw USBException("USBasp device could not be open: no memory");
+                    case LIBUSB_ERROR_ACCESS:
+                        throw USBException("USBasp device could not be open: insufficient permissions");
+                    case LIBUSB_ERROR_NO_DEVICE:
+                        throw USBException("USBasp device could not be open: device does not exist");
+                    default:
+                        throw USBException("USBasp device could not be open: unknown error");
+                }
             }
 
             libusb_get_string_descriptor_ascii(tmpHandle, desc.iManufacturer, manString, 128);

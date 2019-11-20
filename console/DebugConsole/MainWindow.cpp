@@ -166,7 +166,7 @@ int MainWindow::selectProgrammer(){
             }
         }
     } catch (USBException &e){
-        //TODO: Add some meaningfull message for user
+        QMessageBox(QMessageBox::Critical, "Error", e.what(), QMessageBox::Ok).exec();
     }
 
 
