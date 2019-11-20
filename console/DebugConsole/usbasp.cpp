@@ -16,7 +16,6 @@ const unsigned int USBasp::baudrate[] = {2400, 4800, 9600, 19200, 28800, 38400, 
 USBasp::USBasp(){
     this->usbContext = nullptr;
     this->openedDevice = nullptr;
-    this->devList = nullptr;
 
     connect(&timer, SIGNAL(timeout()), this, SLOT(timeout()));
     connect(&pTimer, SIGNAL(timeout()), this, SLOT(pingTick()));
@@ -27,14 +26,14 @@ USBasp::USBasp(){
 }
 
 USBasp::~USBasp(){
-    this->clearDeviceList();
+    this->clearProgrammerList();
 
     if(this->usbContext != nullptr)
         libusb_exit(this->usbContext);
 }
 
-void USBasp::connectDevice(const int device, const enum baudrates baudRate){
-    this->canclePing();
+void USBasp::connectProgrammer(const int device, const enum baudrates baudRate){
+    this->cancelPing();
     this->_connectDevice(device, baudRate);
 }
 
@@ -44,13 +43,11 @@ void USBasp::_connectDevice(const int device, const enum baudrates baudRate){
     temp.len = baudRate;
 
     //make sure there is at least one device
-    if(this->getDeviceCount() == 0)
+    if(this->getProgrammerCount() == 0)
         throw USBException("No device found");
 
 
-    //test if something went wrong (first: try to open device, next switch device into debug mode)
-    int err;
-    if(USB_E_OK != (err = this->openDevice(device)) || 0 > USBTransmitControl(RECEIVE_ENABLE, USB_EN_DEBUG_MODE, &temp, &temp)){
+    if(this->openDevice(this->progList.at(device)) || 0 > USBTransmitControl(RECEIVE_ENABLE, USB_EN_DEBUG_MODE, &temp, &temp)){
         throw USBException("Device cannot be connected");
     }
 
@@ -63,7 +60,7 @@ void USBasp::_connectDevice(const int device, const enum baudrates baudRate){
 }
 
 
-void USBasp::disconnetctDevice(){
+void USBasp::disconnetctProgrammer(){
     USBasp::TBuffer temp;
 
     if(!this->isConnected()){
@@ -82,49 +79,33 @@ void USBasp::disconnetctDevice(){
     this->closeDevice();
 }
 
-int USBasp::findDevices(){
+int USBasp::findProgrammers(){
     libusb_device_descriptor desc;
 
-    this->clearDeviceList();
+    this->clearProgrammerList();
     int usbdevs = libusb_get_device_list(this->usbContext, &(this->devList));
 
-    unsigned char manString[128];
-    unsigned char prodSting[128];
-    libusb_device_handle *tmpHandle;
-
     for(int i = 0; i < usbdevs; i++){
-        libusb_get_device_descriptor(devList[i], &desc);
+        libusb_get_device_descriptor(this->devList[i], &desc);
 
         if(desc.idVendor == VENDOR_ID && desc.idProduct == PRODUCT_ID){
-            int err = 0;
-            if((err = libusb_open(devList[i], &tmpHandle)) != 0){
-                qDebug() << err;
-                switch (err){
-                    case LIBUSB_ERROR_NO_MEM:
-                        throw USBException("USBasp device could not be open: no memory");
-                    case LIBUSB_ERROR_ACCESS:
-                        throw USBException("USBasp device could not be open: insufficient permissions");
-                    case LIBUSB_ERROR_NO_DEVICE:
-                        throw USBException("USBasp device could not be open: device does not exist");
-                    default:
-                        throw USBException("USBasp device could not be open: unknown error");
-                }
+            // Check if device is accessible, if it is, push it into list of found programmers
+            try {
+                this->openDevice(this->devList[i]);
+                this->closeDevice();
+                this->progList.push_back(this->devList[i]);
+            }  catch (USBException &e) {
+                this->clearProgrammerList();
+                throw e;
             }
-
-            libusb_get_string_descriptor_ascii(tmpHandle, desc.iManufacturer, manString, 128);
-            libusb_get_string_descriptor_ascii(tmpHandle, desc.iProduct, prodSting, 128);
-
-            this->progList.push_back(new TUSBaspProg(libusb_get_bus_number(devList[i]), libusb_get_device_address(devList[i]), i));
-
-            libusb_close(tmpHandle);
         }
     }
 
-    return this->getDeviceCount();
+    return this->getProgrammerCount();
 }
 
-void USBasp::pingDevice(const int device) {
-    this->canclePing();
+void USBasp::pingProgrammer(const int device) {
+    this->cancelPing();
     this->pDevice = device;
 
 
@@ -132,40 +113,40 @@ void USBasp::pingDevice(const int device) {
     this->pTimer.start();
 }
 
-int USBasp::openDevice(const int device){
+int USBasp::openDevice(libusb_device * device){
     if(nullptr != this->openedDevice){
         this->closeDevice();
     }
-    else if(!this->getDeviceCount()){
-        throw USBException("No USBasp device detected");
+
+    int err = 0;
+    if((err = libusb_open(device, &(this->openedDevice))) != 0){
+        switch (err){
+            case LIBUSB_ERROR_NO_MEM:
+                throw USBException("USBasp device could not be open: no memory");
+            case LIBUSB_ERROR_ACCESS:
+                throw USBException("USBasp device could not be open: insufficient permissions");
+            case LIBUSB_ERROR_NO_DEVICE:
+                throw USBException("USBasp device could not be open: device does not exist");
+            default:
+                throw USBException("USBasp device could not be open: unknown error");
+        }
     }
 
-    libusb_open(this->devList[this->progList.at(device)->busindex] , &(this->openedDevice));
-
-    if(this->openedDevice != nullptr){
-        /*if(NULL == (handler = usb_open(device))){
-            return USB_E_NO_HANDLER;
-        }*/
-    } else {
-        return USB_E_NO_DEV;
-    }
-
-    return USB_E_OK;
+    return 0;
 }
 
-const USBasp::TUSBaspProg *USBasp::getDevice(const int device){
-    if(device >= this->getDeviceCount() && device < 0){
+const USBasp::TUSBaspProgInfo USBasp::getProgrammerInfo(const int device){
+    if(device >= this->getProgrammerCount() && device < 0){
         std::stringstream ss;
-        ss << "Device #" << device << " of " << this->getDeviceCount() << " cannot be opened.";
+        ss << "Device #" << device << " of " << this->getProgrammerCount() << " cannot be opened.";
         throw new USBException(ss.str());
     }
-    else {
-        return (const TUSBaspProg *)this->progList.at(device);
+    else {        
+        return TUSBaspProgInfo(libusb_get_bus_number(this->progList.at(device)), libusb_get_device_address(this->progList.at(device)));
     }
 }
 
-int USBasp::getDeviceCount(){
-    qDebug() << progList.size();
+int USBasp::getProgrammerCount(){
     return this->progList.size();
 }
 
@@ -180,24 +161,20 @@ void USBasp::closeDevice(){
     }
 }
 
-void USBasp::clearDeviceList(){
+void USBasp::clearProgrammerList(){
     if(nullptr != this->devList){
         this->closeDevice();
         libusb_free_device_list(this->devList, 1);
-
-        for(unsigned int i = 0; i < this->getDeviceCount(); i++){
-            delete this->progList.at(i);
-        }
-
+        this->devList = nullptr;
         this->progList.clear();
     }
 }
 
-void USBasp::canclePing(){
+void USBasp::cancelPing(){
     if(this->pTimer.isActive()){
         this->pTimer.stop();
         if(this->isConnected())
-            this->disconnetctDevice();
+            this->disconnetctProgrammer();
     }
     this->pDevice = -1;
     this->pState = 0;
@@ -286,7 +263,7 @@ void USBasp::pingTick(){
             this->_connectDevice(this->pDevice, USBasp::USBASP_BAUD_2400);
         }
         else {
-            this->disconnetctDevice();
+            this->disconnetctProgrammer();
         }
     } catch (USBException &e){
         Q_UNUSED(e)
@@ -294,5 +271,5 @@ void USBasp::pingTick(){
     }
 
     if(this->pState >= 20)
-        this->canclePing();
+        this->cancelPing();
 }

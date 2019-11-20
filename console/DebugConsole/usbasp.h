@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <QTimer>
 #include <vector>
+#include <iostream>
 
 #define USB_E_OK            0
 #define USB_E_NO_DEV        1
@@ -56,10 +57,10 @@ class USBasp : public QObject {
         typedef struct _usbasp_prog_data_ {
             const int bus;
             const int device;
-            const int busindex;
 
-            _usbasp_prog_data_(const int _bus, const int _device, const int _busindex) : bus(_bus), device(_device), busindex(_busindex) {}
-        } TUSBaspProg;
+            _usbasp_prog_data_(const int _bus, const int _device) : bus(_bus), device(_device) {}
+            _usbasp_prog_data_(const _usbasp_prog_data_ &b) : bus(b.bus), device(b.device) {}
+        } TUSBaspProgInfo;
 
     private:
         enum receive {
@@ -71,7 +72,7 @@ class USBasp : public QObject {
         libusb_device_handle    *openedDevice;
         libusb_device           **devList;
 
-        std::vector<TUSBaspProg*>   progList;
+        std::vector<libusb_device *> progList;
 
         QTimer                  timer;
 
@@ -93,13 +94,13 @@ class USBasp : public QObject {
          * @param baudRate - enumeration, select supported bandwidth
          * @throw USBException if any error ocurs
          */
-        void connectDevice(const int device, const enum baudrates baudRate);
+        void connectProgrammer(const int device, const enum baudrates baudRate);
 
         /**
          * Disconnect USBasp device
          * @throw USBException if any error ocurs
          */
-        void disconnetctDevice();
+        void disconnetctProgrammer();
 
         /**
          * Get recived data
@@ -114,7 +115,7 @@ class USBasp : public QObject {
          * @return int
          * @throws USBException
          */
-        int findDevices();
+        int findProgrammers();
 
         /**
          * @brief pingDevice initialize ping request which will be sent to device selected by
@@ -123,20 +124,20 @@ class USBasp : public QObject {
          * LED on the device.
          * @param int device    a number of found device
          */
-        void pingDevice(const int device);
+        void pingProgrammer(const int device);
 
         /**
          * @brief getDevice function returns a structure with USBasp identifier.
          * @param device    a number of found device.
-         * @return TUSBaspProg *
+         * @return TUSBaspProg
          */
-        const TUSBaspProg * getDevice(const int device);
+        const TUSBaspProgInfo getProgrammerInfo(const int device);
 
         /**
          * @brief getDeviceCount returns the amount of found USBasp devices.
          * @return int
          */
-        int getDeviceCount();
+        int getProgrammerCount();
 
         /**
          * @brief isConnected function returns true in case there is any device actively connected
@@ -154,9 +155,10 @@ private:
 
         /**
          * @brief USBOpenDevice
-         * @param device    a number of found device
+         * @param device    a usb device to open
          */
-        int openDevice(const int device);
+        int openDevice(libusb_device * device);
+
 
         /**
          * USBCloseDevice should be used to close current opened tty device
@@ -167,9 +169,9 @@ private:
          * @brief clearDeviceList function clears the list of found USBasp devices
          * which were found by findDevices function.
          */
-        void clearDeviceList();
+        void clearProgrammerList();
 
-        void canclePing();
+        void cancelPing();
 
 
         /**

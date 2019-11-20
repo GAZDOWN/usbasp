@@ -107,14 +107,13 @@ void MainWindow::connectProgrammer(){
 
         //this->programmer.findDevices();
         //programmer.connectDevice(0, (enum USBasp::baudrates)this->ui->baudRates->itemData(ui->baudRates->currentIndex()).toInt());
-        programmer.connectDevice(this->selectedProgrammer, (enum USBasp::baudrates)this->ui->baudRates->itemData(ui->baudRates->currentIndex()).toInt());
+        programmer.connectProgrammer(this->selectedProgrammer, (enum USBasp::baudrates)this->ui->baudRates->itemData(ui->baudRates->currentIndex()).toInt());
         ui->disconnectButton->setDisabled(false);
         ui->connectButton->setText("Reco&nnect");
         ui->consoleBox->setFocus();
 
-        const USBasp::TUSBaspProg *prog = this->programmer.getDevice(this->selectedProgrammer);
-
-        this->status.setText(QString("Connected to USBAsp (DEV: %1, BUS %2) at " + this->ui->baudRates->itemText(ui->baudRates->currentIndex()) + " bauds").arg(prog->device).arg(prog->bus));
+        USBasp::TUSBaspProgInfo prog = this->programmer.getProgrammerInfo(this->selectedProgrammer);
+        this->status.setText(QString("Connected to USBAsp (DEV: %1, BUS %2) at " + this->ui->baudRates->itemText(ui->baudRates->currentIndex()) + " bauds").arg(prog.device).arg(prog.bus));
     }
     catch (USBException &e){
         QMessageBox(QMessageBox::Critical, "Error", e.what(), QMessageBox::Ok).exec();
@@ -126,7 +125,7 @@ void MainWindow::disconnectProgrammer(){
     try {
 
         this->status.clear();
-        programmer.disconnetctDevice();
+        programmer.disconnetctProgrammer();
     }
     catch (USBException &e){
         QMessageBox(QMessageBox::Critical, "Error", e.what(), QMessageBox::Ok).exec();
@@ -144,12 +143,12 @@ int MainWindow::selectProgrammer(){
     if(this->programmer.isConnected())
         this->disconnectProgrammer();
     try {
-        this->programmer.findDevices();
+        this->programmer.findProgrammers();
 
-        if(this->programmer.getDeviceCount() == 0){
+        if(this->programmer.getProgrammerCount() == 0){
             QMessageBox(QMessageBox::Critical, "Error", "No USBasp device found", QMessageBox::Ok).exec();
         }
-        else if(this->programmer.getDeviceCount() <= 1){
+        else if(this->programmer.getProgrammerCount() <= 1){ //1
             // One device only, there is no need for additional user action
             this->selectedProgrammer = 0;
 
@@ -189,7 +188,7 @@ void MainWindow::rxDataReady(){
 void MainWindow::closeEvent(QCloseEvent *e){
     Q_UNUSED(e);
     try {
-        programmer.disconnetctDevice();
+        programmer.disconnetctProgrammer();
     }
     catch (USBException &ex){
         Q_UNUSED(ex);

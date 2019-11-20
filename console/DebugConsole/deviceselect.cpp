@@ -31,13 +31,13 @@ void DeviceSelect::generateProgrammerList(){
     this->selectedDevice = -1;
 
     try {
-        this->programmer->findDevices();
+        this->programmer->findProgrammers();
     } catch (USBException &e){
         //TODO: Add some meaningfull message for user
         return;
     }
 
-    if(!this->programmer->getDeviceCount()){
+    if(!this->programmer->getProgrammerCount()){
         // No device
         QLabel *label = new QLabel("No device found");
 
@@ -48,8 +48,11 @@ void DeviceSelect::generateProgrammerList(){
     }
     else {
         // TODO: Make a widget out of this select processing only known data
-        for(int i = 0; i < this->programmer->getDeviceCount(); i++){
-            QRadioButton * radio = new QRadioButton(QString("Device %1 on bus %2").arg(this->programmer->getDevice(i)->device).arg(this->programmer->getDevice(i)->bus), this);
+
+        for(int i = 0; i < this->programmer->getProgrammerCount(); i++){
+            USBasp::TUSBaspProgInfo pInfo = this->programmer->getProgrammerInfo(i);
+
+            QRadioButton * radio = new QRadioButton(QString("Device %1 on bus %2").arg(pInfo.device).arg(pInfo.bus), this);
             if(i == 0){
                 radio->setChecked(true);
                 this->selectedDevice = 0;
@@ -87,7 +90,7 @@ void DeviceSelect::destroyProgrammerList(){
 
 void DeviceSelect::startPinging(){
     int progid = QObject::sender()->property("progid").toInt();
-    this->programmer->pingDevice(progid);
+    this->programmer->pingProgrammer(progid);
 }
 
 void DeviceSelect::refreshList(){
