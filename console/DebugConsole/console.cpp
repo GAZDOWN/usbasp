@@ -36,30 +36,10 @@ void Console::setFontColor(const QColor color){
     this->repaint();
 }
 
-// TODO: rename this + refactor!!
+// TODO: rename this
 bool Console::_putChar(char c){
     if(this->escBuffer.length() > 0){
         //escape codes
-        /*if(this->escBuffer.length() == 1 && c == 0x5B){
-            this->escBuffer.replace(0, 1, ESC_CSI);
-        }
-        else if(this->escBuffer.at(0) == ESC_2_BYTE && c >= 64 && c <= 95){
-
-            // VT-100 ESC codes
-            this->escBuffer.append(c);
-            //escape character handling
-            this->handleEscapeCharacter();
-        }
-        else if(this->escBuffer.at(0) == ESC_CSI && !(c >= 64 && c <= 126)){
-            qDebug() << "VT-100: " << c;
-            this->escBuffer.append(c);
-        }
-        else if(this->escBuffer.at(0) == ESC_CSI && c >= 64 && c <= 126){
-            this->escBuffer.append(c);
-
-            //escape character handling
-            this->handleEscapeCharacter();
-        }*/
 
         //VT-100
         if(this->escBuffer.length() == 1 && c == '[') {
@@ -68,7 +48,6 @@ bool Console::_putChar(char c){
         // ESC[ + c (LEN 2)
         else if(this->escBuffer.length() == 2 && (c == '2' || c == '1')){
             this->escBuffer.append(c);
-            //qDebug() << c;
         }
         // ESC[ + c + c (LEN 3)
         else if(this->escBuffer.length() == 3 && c == 'J'){
@@ -196,52 +175,6 @@ int Console::putString(QString str){
 
     return str.length();
 }
-
-//char Console::putChar(char c){
-//    this->putString(QString(c));
-
-//    return c;
-//}
-
-//int Console::putString(QString str){
-//    if(str.length() == 0)
-//        return 0;
-
-//    bool append = false, refresh = false;
-
-//    for(int i = 0; i < str.length(); i++){
-//        append = this->_putChar(str.at(i).toLatin1());
-
-//        if(str.at(i) == '\n'){
-//            this->setPlainText(this->toPlainText().replace(this->rowCursorPosition, this->newLineBuffer.length(), this->newLineBuffer));
-//            this->moveCursor(QTextCursor::End);
-
-//            this->rowCursorPosition = this->toPlainText().lastIndexOf("\n") + 1;
-//            this->newLineBuffer.clear();
-
-//            refresh = false;
-//        }
-//        else if(append) {
-//            refresh = true;
-//        }
-//    }
-
-//    if(refresh){
-//        /*QTextCursor tmp = this->textCursor();
-//        tmp.movePosition(QTextCursor::End);
-
-//        if(this->textCursor().position() != tmp.position()){
-//            qDebug() << "middle";
-//        }
-//        else {*/
-//            // Append at the end of line
-//            this->setPlainText(this->toPlainText().replace(this->rowCursorPosition, this->toPlainText().length() - this->rowCursorPosition, this->newLineBuffer));
-//            this->moveCursor(QTextCursor::End);
-//        //}
-//    }
-
-//    return str.length();
-//}
 
 void Console::clear(){
     QPlainTextEdit::clear();
