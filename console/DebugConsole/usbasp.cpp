@@ -17,7 +17,6 @@ USBasp::USBasp(){
     this->usbContext = nullptr;
     this->openedDevice = nullptr;
     this->devList = nullptr;
-    this->progListSize = 0;
 
     connect(&timer, SIGNAL(timeout()), this, SLOT(timeout()));
     connect(&pTimer, SIGNAL(timeout()), this, SLOT(pingTick()));
@@ -89,17 +88,14 @@ int USBasp::findDevices(){
     this->clearDeviceList();
     int usbdevs = libusb_get_device_list(this->usbContext, &(this->devList));
 
+    unsigned char manString[128];
+    unsigned char prodSting[128];
+    libusb_device_handle *tmpHandle;
+
     for(int i = 0; i < usbdevs; i++){
         libusb_get_device_descriptor(devList[i], &desc);
 
         if(desc.idVendor == VENDOR_ID && desc.idProduct == PRODUCT_ID){
-            this->progListSize++;
-
-            unsigned char manString[128];
-            unsigned char prodSting[128];
-
-            libusb_device_handle *tmpHandle;
-
             if(libusb_open(devList[i], &tmpHandle)){
                 //return USB_E_NO_HANDLER;
                 continue;
@@ -114,7 +110,7 @@ int USBasp::findDevices(){
         }
     }
 
-    return this->progListSize;
+    return this->getDeviceCount();
 }
 
 void USBasp::pingDevice(const int device) {
@@ -129,7 +125,9 @@ void USBasp::pingDevice(const int device) {
 int USBasp::openDevice(const int device){
     if(nullptr != this->openedDevice){
         this->closeDevice();
-
+    }
+    else if(!this->getDeviceCount()){
+        throw USBException("No USBasp device detected");
     }
 
     libusb_open(this->devList[this->progList.at(device)->busindex] , &(this->openedDevice));
@@ -157,7 +155,8 @@ const USBasp::TUSBaspProg *USBasp::getDevice(const int device){
 }
 
 int USBasp::getDeviceCount(){
-    return this->progListSize;
+    qDebug() << progList.size();
+    return this->progList.size();
 }
 
 int USBasp::isConnected(){
@@ -175,9 +174,8 @@ void USBasp::clearDeviceList(){
     if(nullptr != this->devList){
         this->closeDevice();
         libusb_free_device_list(this->devList, 1);
-        this->progListSize = 0;
 
-        for(unsigned int i = 0; i < this->progList.size(); i++){
+        for(unsigned int i = 0; i < this->getDeviceCount(); i++){
             delete this->progList.at(i);
         }
 

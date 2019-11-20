@@ -71,7 +71,6 @@ class USBasp : public QObject {
         libusb_device_handle    *openedDevice;
         libusb_device           **devList;
 
-        int                         progListSize;
         std::vector<TUSBaspProg*>   progList;
 
         QTimer                  timer;

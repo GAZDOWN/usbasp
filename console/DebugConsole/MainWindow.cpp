@@ -146,7 +146,10 @@ int MainWindow::selectProgrammer(){
     try {
         this->programmer.findDevices();
 
-        if(this->programmer.getDeviceCount() == 1){
+        if(this->programmer.getDeviceCount() == 0){
+            QMessageBox(QMessageBox::Critical, "Error", "No USBasp device found", QMessageBox::Ok).exec();
+        }
+        else if(this->programmer.getDeviceCount() <= 1){
             // One device only, there is no need for additional user action
             this->selectedProgrammer = 0;
 
