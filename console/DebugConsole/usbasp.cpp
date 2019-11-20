@@ -162,10 +162,12 @@ void USBasp::closeDevice(){
 }
 
 void USBasp::clearProgrammerList(){
-    if(nullptr != this->devList){
+    //if(nullptr != this->devList){
+    if(this->getProgrammerCount()){
         this->closeDevice();
         libusb_free_device_list(this->devList, 1);
-        this->devList = nullptr;
+        //this->devList = nullptr;
+
         this->progList.clear();
     }
 }
